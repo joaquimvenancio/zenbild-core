@@ -5,3 +5,5 @@ app = FastAPI()
 @app.get("/")
 def read_root():
     return {"message": "Zenbild API is running 🚀"}
+
+#cool
