@@ -1,6 +1,7 @@
 {
   "name": "zenbild-core",
   "private": true,
+  "packageManager": "pnpm",
   "workspaces": [
     "frontend",
     "backend",
