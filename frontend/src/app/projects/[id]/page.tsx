@@ -8,6 +8,9 @@ type KPI = { label: string; value: string | number };
 type TimelineItem = { date: string; text: string };
 type ProjectDetail = { id: string; name: string; kpis: KPI[]; timeline: TimelineItem[] };
 
+type PageParams = { params: { id: string } };
+
+
 async function fetchProject(id: string): Promise<ProjectDetail | null> {
   const { data } = await api.get(`/projects/${id}`);
   return data ?? null;
