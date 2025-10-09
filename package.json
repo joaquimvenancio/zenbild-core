@@ -1,0 +1,7 @@
+{
+  "name": "zenbild-core",
+  "private": true,
+  "workspaces": [
+    "frontend/*"
+  ]
+}
