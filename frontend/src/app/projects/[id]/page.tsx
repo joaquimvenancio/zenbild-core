@@ -16,7 +16,7 @@ async function fetchProject(id: string): Promise<ProjectDetail | null> {
   return data ?? null;
 }
 
-export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+export default function Page({ params }: PageParams) {
   const { data, isLoading } = useQuery({
     queryKey: ["project", params.id],
     queryFn: () => fetchProject(params.id),
