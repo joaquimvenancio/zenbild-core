@@ -2,6 +2,12 @@
   "name": "zenbild-core",
   "private": true,
   "workspaces": [
-    "frontend/*"
-  ]
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.2",
+    "axios": "^1.12.2"
+  }
 }
