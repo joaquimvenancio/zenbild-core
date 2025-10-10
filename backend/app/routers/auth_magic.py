@@ -46,7 +46,6 @@ def rate_limit_ok(kind: str, key: str) -> bool:
     # use Upstash Redis se disponível; para MVP, retornar True
     return True
 
-# --- E-mail (Resend por padrão; Postmark alternativo) ------------------------
 async def send_magic_email_resend(to_email: str, link: str):
     api_key = os.getenv("RESEND_API_KEY")
     if not api_key:
@@ -65,29 +64,10 @@ async def send_magic_email_resend(to_email: str, link: str):
         if r.status_code >= 300:
             raise RuntimeError(f"Falha ao enviar e-mail: {r.text}")
 
-async def send_magic_email_postmark(to_email: str, link: str):
-    token = os.getenv("POSTMARK_SERVER_TOKEN")
-    if not token:
-        raise RuntimeError("POSTMARK_SERVER_TOKEN ausente")
-    payload = {
-        "From": "Zenbild <login@notifications.zenbild.com>",
-        "To": to_email,
-        "Subject": "Seu acesso ao Zenbild",
-        "TextBody": f"Use este link para entrar (expira em {os.getenv('MAGIC_LINK_TTL_MINUTES','15')} min): {link}",
-        "MessageStream": "outbound"
-    }
-    async with httpx.AsyncClient(timeout=15) as client:
-        r = await client.post("https://api.postmarkapp.com/email", json=payload, headers={
-            "X-Postmark-Server-Token": token,
-            "Content-Type": "application/json",
-        })
-        if r.status_code >= 300:
-            raise RuntimeError(f"Falha ao enviar e-mail: {r.text}")
 
 async def send_magic_email(to_email: str, link: str):
     if os.getenv("RESEND_API_KEY"):
         return await send_magic_email_resend(to_email, link)
-    return await send_magic_email_postmark(to_email, link)
 
 # --- Schemas -----------------------------------------------------------------
 class MagicRequest(BaseModel):
@@ -122,8 +102,9 @@ async def magic_request(payload: MagicRequest, request: Request):
     try:
         await send_magic_email(email, link)
     except Exception:
+        raise HTTPException(status_code=400, detail="Erro no envio.")
         # Não vaze erro de envio; logue no Sentry no futuro
-        pass
+        #pass
 
     # Sempre 200 para não vazar existência
     return {"ok": True}
