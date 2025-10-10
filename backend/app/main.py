@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import auth_magic
+from app.routers import auth_magic
 
 app = FastAPI(title="Zenbild API")
 app.include_router(auth_magic.router)
