@@ -1,6 +1,11 @@
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta, timezone
+from typing import Optional
+from sqlalchemy import String, func, text
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
+from sqlalchemy import create_engine
+from sqlalchemy.exc import IntegrityError
 import os, secrets, hashlib
 import httpx
 
@@ -25,7 +30,31 @@ def get_or_create_user_by_email(email: str):
     # SELECT * FROM users WHERE email=email
     # se não existir -> INSERT users(email,is_guest=false)
     # return { "id": "...", "email": email }
-    ...
+    normalized = email.strip().lower()
+    with Session(engine) as session:
+        user: Optional[User] = session.query(User).filter(
+            func.lower(User.email) == normalized
+        ).one_or_none()
+
+        if user:
+            return {"id": user.id, "email": user.email}
+
+        # Tenta criar
+        new_user = User(email=normalized, is_guest=False)
+        session.add(new_user)
+        try:
+            session.commit()
+        except IntegrityError:
+            # Em caso de corrida: outro processo inseriu primeiro. Busque novamente.
+            session.rollback()
+            user = session.query(User).filter(
+                func.lower(User.email) == normalized
+            ).one()
+            return {"id": user.id, "email": user.email}
+
+        session.refresh(new_user)
+        return {"id": new_user.id, "email": new_user.email}
+
 
 def issue_jwt(user_id: str, is_guest: bool = False) -> str:
     # HS256 com exp = now + JWT_EXPIRES_DAYS
