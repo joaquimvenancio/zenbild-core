@@ -7,7 +7,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/magic/consume?token=${encodeURIComponent(token)}`, {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const res = await fetch(`${baseUrl}/auth/magic/consume?token=${encodeURIComponent(token)}`, {
       method: "POST",
       credentials: "include",
     });
