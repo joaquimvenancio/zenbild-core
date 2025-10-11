@@ -30,7 +30,10 @@ export default function LoginPage() {
     setNeedsAccountConfirmation(false);
     setStatus("sending");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/magic/request`, {
+      const apiBaseUrl = (
+        process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
+      ).replace(/\/+$/, "");
+      const res = await fetch(`${apiBaseUrl}/auth/magic/request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, create_if_missing: createIfMissing }),
