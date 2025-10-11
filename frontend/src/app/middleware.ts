@@ -22,13 +22,15 @@ export function middleware(req: NextRequest) {
 
   // Regra de autenticação: existe um cookie de sessão válido?
   // Troque "zen_sess" pelo nome do seu cookie de sessão.
-  const session = req.cookies.get("zen_sess")?.value;
+  const session =
+    req.cookies.get("zenbild_token")?.value ?? req.cookies.get("zen_sess")?.value;
 
   if (!session) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     // opcional: preserve "next" para pós-login
-    url.searchParams.set("next", pathname);
+    const nextPath = `${pathname}${req.nextUrl.search}`;
+    url.searchParams.set("next", nextPath);
     return NextResponse.redirect(url);
   }
 

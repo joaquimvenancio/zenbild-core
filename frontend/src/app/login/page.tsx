@@ -1,9 +1,21 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle"|"sending"|"sent"|"error">("idle");
+  const searchParams = useSearchParams();
+  const nextParam = searchParams.get("next");
+
+  useEffect(() => {
+    const isSafePath = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//");
+    if (isSafePath) {
+      document.cookie = `post_login_redirect=${encodeURIComponent(nextParam)}; path=/`;
+    } else {
+      document.cookie = "post_login_redirect=; path=/; max-age=0";
+    }
+  }, [nextParam]);
 
   async function requestMagic() {
     if (!email) return;
