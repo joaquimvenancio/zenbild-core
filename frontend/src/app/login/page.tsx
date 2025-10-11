@@ -1,10 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle"|"sending"|"sent"|"error">("idle");
+function PersistRedirectTarget() {
   const searchParams = useSearchParams();
   const nextParam = searchParams.get("next");
 
@@ -16,6 +14,13 @@ export default function LoginPage() {
       document.cookie = "post_login_redirect=; path=/; max-age=0";
     }
   }, [nextParam]);
+
+  return null;
+}
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle"|"sending"|"sent"|"error">("idle");
 
   async function requestMagic() {
     if (!email) return;
@@ -34,6 +39,9 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto max-w-md p-6">
+      <Suspense fallback={null}>
+        <PersistRedirectTarget />
+      </Suspense>
       <h1 className="text-2xl font-semibold mb-4">Entre no Zenbild</h1>
 
       <label className="block text-sm mb-2">E-mail</label>
