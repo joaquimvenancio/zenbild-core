@@ -51,9 +51,27 @@ export default function LoginPage() {
       setStatus("sent");
     } catch (error) {
       setStatus("error");
-      setErrorMessage(
-        error instanceof Error ? error.message : "Erro ao solicitar o link mágico."
-      );
+
+      let message = "Erro ao solicitar o link mágico.";
+      if (error instanceof Error) {
+        const normalizedMessage = error.message.trim();
+        const normalizedLower = normalizedMessage.toLowerCase();
+        if (
+          normalizedLower === "failed to fetch" ||
+          normalizedLower === "networkerror when attempting to fetch resource." ||
+          normalizedLower === "typeerror: failed to fetch" ||
+          normalizedLower === "fetch failed"
+        ) {
+          message =
+            "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.";
+        } else if (normalizedMessage) {
+          message = normalizedMessage;
+        }
+      } else if (typeof error === "string" && error.trim()) {
+        message = error.trim();
+      }
+
+      setErrorMessage(message);
     }
   }
 
