@@ -8,14 +8,18 @@ from app.routers import auth_magic
 app = FastAPI(title="Zenbild API")
 
 
+def _normalize_origin(origin: str) -> str:
+    return origin.strip().rstrip("/")
+
+
 def _resolve_cors_origins() -> list[str]:
     configured = os.getenv("CORS_ALLOW_ORIGINS")
     if configured:
-        return [origin.strip() for origin in configured.split(",") if origin.strip()]
+        return [_normalize_origin(origin) for origin in configured.split(",") if origin.strip()]
 
     frontend_url = os.getenv("FRONTEND_URL")
     if frontend_url:
-        return [frontend_url]
+        return [_normalize_origin(frontend_url)]
 
     # fallback para ambientes locais comuns
     return [
