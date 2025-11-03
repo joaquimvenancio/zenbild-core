@@ -61,6 +61,13 @@ if not DATABASE_URL:
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
 
 
+def _ensure_schema():
+    Base.metadata.create_all(engine)
+
+
+_ensure_schema()
+
+
 # --- Helpers -----------------------------------------------------------------
 def _normalize_email(email: str) -> str:
     return email.strip().lower()
