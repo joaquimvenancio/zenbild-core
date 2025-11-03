@@ -9,66 +9,14 @@ import httpx
 import jwt
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import Boolean, DateTime, String, func
-from sqlalchemy import create_engine
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import Session
+
+from app.db import engine
+from app.models import EmailLoginToken, User
 
 router = APIRouter(prefix="/auth/magic", tags=["auth-magic"])
-
-
-class Base(DeclarativeBase):
-    pass
-
-
-class User(Base):
-    __tablename__ = "users"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-    )
-    email: Mapped[str] = mapped_column(String, unique=True, index=True)
-    is_guest: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-
-
-class EmailLoginToken(Base):
-    __tablename__ = "email_login_tokens"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String, index=True)
-    token_hash: Mapped[str] = mapped_column(String, unique=True, index=True)
-    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        PGUUID(as_uuid=True), nullable=True, index=True
-    )
-    ip: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    user_agent: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    consumed_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL não configurada")
-
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
-
-
-def _ensure_schema():
-    Base.metadata.create_all(engine)
-
-
-_ensure_schema()
 
 
 # --- Helpers -----------------------------------------------------------------

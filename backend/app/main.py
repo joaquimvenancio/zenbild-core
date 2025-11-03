@@ -3,9 +3,13 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth_magic
+from app.db import ensure_schema
+from app.routers import auth_magic, projects
 
 app = FastAPI(title="Zenbild API")
+
+
+ensure_schema()
 
 
 def _normalize_origin(origin: str) -> str:
@@ -36,6 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(auth_magic.router)
+app.include_router(projects.router)
 
 @app.get("/health")
 def health():
