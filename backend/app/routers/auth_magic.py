@@ -13,6 +13,7 @@ from sqlalchemy import Boolean, DateTime, String, func
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 
 router = APIRouter(prefix="/auth/magic", tags=["auth-magic"])
 
@@ -24,10 +25,10 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[str] = mapped_column(
-        String,
+    id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
         primary_key=True,
-        default=lambda: str(uuid.uuid4()),
+        default=uuid.uuid4,
     )
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     is_guest: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -42,7 +43,9 @@ class EmailLoginToken(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String, index=True)
     token_hash: Mapped[str] = mapped_column(String, unique=True, index=True)
-    user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PGUUID(as_uuid=True), nullable=True, index=True
+    )
     ip: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     user_agent: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -73,6 +76,14 @@ def _normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
+def _to_uuid(value: Optional[str | uuid.UUID]) -> Optional[uuid.UUID]:
+    if value is None:
+        return None
+    if isinstance(value, uuid.UUID):
+        return value
+    return uuid.UUID(str(value))
+
+
 def save_token(
     email: str,
     token_hash: str,
@@ -88,7 +99,7 @@ def save_token(
             expires_at=expires_at,
             ip=ip,
             user_agent=ua,
-            user_id=user_id,
+            user_id=_to_uuid(user_id),
         )
         session.add(token)
         session.commit()
@@ -109,7 +120,10 @@ def find_valid_token(token_hash: str):
         )
         if not token:
             return None
-        return {"email": token.email, "user_id": token.user_id}
+        return {
+            "email": token.email,
+            "user_id": str(token.user_id) if token.user_id else None,
+        }
 
 
 def consume_token(token_hash: str) -> bool:
@@ -137,15 +151,26 @@ def get_user_by_email(email: str):
         )
         if not user:
             return None
-        return {"id": user.id, "email": user.email, "is_guest": user.is_guest}
+        return {
+            "id": str(user.id),
+            "email": user.email,
+            "is_guest": user.is_guest,
+        }
 
 
-def get_user_by_id(user_id: str):
+def get_user_by_id(user_id: str | uuid.UUID):
     with Session(engine) as session:
-        user: Optional[User] = session.query(User).filter(User.id == user_id).one_or_none()
+        user_uuid = _to_uuid(user_id)
+        user: Optional[User] = (
+            session.query(User).filter(User.id == user_uuid).one_or_none()
+        )
         if not user:
             return None
-        return {"id": user.id, "email": user.email, "is_guest": user.is_guest}
+        return {
+            "id": str(user.id),
+            "email": user.email,
+            "is_guest": user.is_guest,
+        }
 
 
 def create_user(email: str):
@@ -162,11 +187,15 @@ def create_user(email: str):
                 .filter(func.lower(User.email) == normalized)
                 .one()
             )
-            return {"id": user.id, "email": user.email, "is_guest": user.is_guest}
+            return {
+                "id": str(user.id),
+                "email": user.email,
+                "is_guest": user.is_guest,
+            }
 
         session.refresh(new_user)
         return {
-            "id": new_user.id,
+            "id": str(new_user.id),
             "email": new_user.email,
             "is_guest": new_user.is_guest,
         }
